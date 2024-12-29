@@ -1,5 +1,5 @@
+use fs;
 use std::{env, error::Error, io};
-
 mod tcp_processor;
 
 // Collecting any args from env
@@ -23,6 +23,9 @@ fn execute_args(args: Vec<String>) -> Result<(), Box<dyn Error>> {
         "--upload" | "-u" => {
             let param = get_param(&args);
             upload_file(param?)?;
+        }
+        "--file-list" | "-fl" => {
+            get_file_list()?;
         }
         _ => exit_with("Unknown option."),
     }
@@ -52,9 +55,18 @@ fn download_file(file_name: &str) -> Result<(), Box<dyn Error>> {
 
 // Connecting to server and call send_request
 fn upload_file(file_name: &str) -> Result<(), Box<dyn Error>> {
-    tcp_processor::fs::is_file_exist(tcp_processor::FILE_DIR, file_name)?;
+    fs::is_file_exist(tcp_processor::FILE_DIR, file_name)?;
     let mut stream = tcp_processor::connect_to_server()?;
     tcp_processor::send_request(&mut stream, file_name)?;
+    Ok(())
+}
+
+fn get_file_list() -> Result<(), Box<dyn Error>> {
+    let mut stream = tcp_processor::connect_to_server()?;
+    let info = tcp_processor::file_list_get_request(&mut stream)?;
+    println!(":::Files on server:::");
+    println!("{info}");
+    println!(":::end:::");
     Ok(())
 }
 

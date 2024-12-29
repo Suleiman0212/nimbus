@@ -8,10 +8,6 @@ use std::{
 use dtp::{Content, ContentType, Message, SubTitile, Title};
 use rw::{send_message, wait_ok};
 
-mod dtp;
-pub mod fs;
-mod rw;
-
 // Hardcoded data
 // It will be change in future
 pub const FILE_DIR: &str = "/home/zeroone/client_data/";
@@ -132,6 +128,30 @@ pub fn send_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<d
     println!("File uploaded!");
 
     Ok(())
+}
+
+pub fn file_list_get_request(stream: &mut TcpStream) -> Result<String, Box<dyn Error>> {
+    let message: Message = Message::new(
+        Title::FileListRequest,
+        SubTitile::Ok,
+        ContentType::NoContent,
+        vec![],
+    );
+    rw::send_message(stream, message)?;
+
+    let response = rw::get_message(stream)?;
+    let response =
+        match unbox_message(response, Title::FileListRequest, ContentType::FileData)?[0].clone() {
+            Content::Binary(b) => b,
+            _ => {
+                return Err(Box::new(io::Error::new(
+                    io::ErrorKind::Other,
+                    "InvalidType: file content incorrect type (isnt Binary).",
+                )))
+            }
+        };
+
+    Ok(String::from_utf8_lossy(&response).to_string())
 }
 
 // Unboxing message like a gift
