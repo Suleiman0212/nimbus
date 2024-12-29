@@ -12,6 +12,8 @@ mod dtp;
 pub mod fs;
 mod rw;
 
+// Hardcoded data
+// It will be change in future
 pub const FILE_DIR: &str = "/home/zeroone/client_data/";
 const SERVER_IP: &str = "127.0.0.1:8080";
 
@@ -19,6 +21,14 @@ pub fn connect_to_server() -> Result<TcpStream, Box<dyn Error>> {
     Ok(TcpStream::connect(SERVER_IP)?)
 }
 
+// Get request like a "Download"
+// Steps:
+// 1. Sending file name
+// 2. Getting file size
+// 3. Waiting for user decision
+// 4. If alls good, sending OK
+// 5. Collecting file binary data
+// and writing it to a file
 pub fn get_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dyn Error>> {
     let name_content = Content::Text(file_name.to_string());
     let message: Message = Message::new(
@@ -85,6 +95,12 @@ pub fn get_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dy
     Ok(())
 }
 
+// Send request like a "Upload"
+// Steps:
+// 1. Sending request with file name
+// 2. Waiting for OK
+// 3. Sending file binary data
+// 4. Waiting for OK
 pub fn send_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dyn Error>> {
     let name_content = Content::Text(file_name.to_string());
     let message: Message = Message::new(
@@ -118,6 +134,9 @@ pub fn send_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<d
     Ok(())
 }
 
+// Unboxing message like a gift
+// It needed to catch any errors
+// Related with incorrect types
 fn unbox_message(
     message: Message,
     ok_title: Title,
