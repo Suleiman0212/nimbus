@@ -2,7 +2,7 @@ use core::f32;
 use std::{
     error::Error,
     io::{self, Read, Write},
-    net::TcpStream,
+    net::{SocketAddr, TcpStream},
 };
 
 use dtp::{Content, ContentType, Message, SubTitile, Title};
@@ -11,10 +11,10 @@ use rw::{send_message, wait_ok};
 // Hardcoded data
 // It will be change in future
 pub const FILE_DIR: &str = "/home/zeroone/client_data/";
-const SERVER_IP: &str = "127.0.0.1:8080";
 
-pub fn connect_to_server() -> Result<TcpStream, Box<dyn Error>> {
-    Ok(TcpStream::connect(SERVER_IP)?)
+pub fn connect_to_server(server_ip: String) -> Result<TcpStream, Box<dyn Error>> {
+    let addr = server_ip.parse::<SocketAddr>()?;
+    Ok(TcpStream::connect(addr)?)
 }
 
 // Get request like a "Download"
