@@ -64,9 +64,9 @@ fn upload_file(file_name: &str) -> Result<(), Box<dyn Error>> {
 fn get_file_list() -> Result<(), Box<dyn Error>> {
     let mut stream = tcp_processor::connect_to_server()?;
     let info = tcp_processor::file_list_get_request(&mut stream)?;
-    println!(":::Files on server:::");
+    println!(":::Files on server:::\n");
     println!("{info}");
-    println!(":::end:::");
+    println!(":::Files on server:::");
     Ok(())
 }
 
