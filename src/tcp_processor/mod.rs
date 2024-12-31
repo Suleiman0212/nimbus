@@ -60,13 +60,14 @@ pub fn get_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dy
     match input {
         "" | "y" | "Y" => (),
         "n" | "N" => {
+            rw::send_err(stream, Title::GetRequest, "Aborted by user.")?;
             std::process::exit(0);
         }
         _ => {
             return Err(Box::new(io::Error::new(
                 io::ErrorKind::Other,
                 "Aborted, input Y or N!",
-            )))
+            )));
         }
     }
 
