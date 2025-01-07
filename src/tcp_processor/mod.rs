@@ -8,10 +8,6 @@ use std::{
 use dtp::{Content, ContentType, Message, SubTitile, Title};
 use rw::{send_message, wait_ok};
 
-// Hardcoded data
-// It will be change in future
-pub const FILE_DIR: &str = "/home/zeroone/client_data/";
-
 pub fn connect_to_server(server_ip: String) -> Result<TcpStream, Box<dyn Error>> {
     let addr = server_ip.parse::<SocketAddr>()?;
     Ok(TcpStream::connect(addr)?)
@@ -25,7 +21,7 @@ pub fn connect_to_server(server_ip: String) -> Result<TcpStream, Box<dyn Error>>
 // 4. If alls good, sending OK
 // 5. Collecting file binary data
 // and writing it to a file
-pub fn get_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dyn Error>> {
+pub fn get_request(stream: &mut TcpStream, file_name: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     let name_content = Content::Text(file_name.to_string());
     let message: Message = Message::new(
         Title::GetRequest,
@@ -85,11 +81,7 @@ pub fn get_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dy
             }
         };
 
-    let mut file = fs::create_file(FILE_DIR, &file_name)?;
-    file.write_all(&file_data)?;
-    println!("File downloaded!");
-
-    Ok(())
+    Ok(file_data)
 }
 
 // Send request like a "Upload"
@@ -98,7 +90,11 @@ pub fn get_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dy
 // 2. Waiting for OK
 // 3. Sending file binary data
 // 4. Waiting for OK
-pub fn send_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dyn Error>> {
+pub fn send_request(
+    stream: &mut TcpStream,
+    file_name: &str,
+    file_data: Vec<u8>,
+) -> Result<(), Box<dyn Error>> {
     let name_content = Content::Text(file_name.to_string());
     let message: Message = Message::new(
         Title::SendRequest,
@@ -111,10 +107,9 @@ pub fn send_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<d
 
     rw::wait_ok(stream, Title::SendRequest)?;
 
-    let mut buf: Vec<u8> = vec![];
-    let mut file = fs::load_file(FILE_DIR, &file_name)?;
-    file.read_to_end(&mut buf)?;
-    let file_data = Content::Binary(buf);
+    // TODO: Move file read functionality to main.rs
+
+    let file_data = Content::Binary(file_data);
 
     let file_message: Message = Message::new(
         Title::SendRequest,

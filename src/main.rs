@@ -1,6 +1,11 @@
 use config::Config;
 use fs;
-use std::{env, error::Error, io};
+use std::{
+    env,
+    error::Error,
+    io::{self, Read, Write},
+    path::{Path, PathBuf},
+};
 
 mod config;
 mod tcp_processor;
@@ -11,13 +16,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Check config file for existance
     // If it isnt, create it
-    let conf: Config = match fs::is_file_exist(&config::get_config_path()?, "config.toml") {
+    let conf: Config = match fs::is_file_exist(&config::get_config_path()?.join("config.toml")) {
         Ok(_) => config::get_config()?,
         Err(e) => {
             eprintln!("{e}");
             config::crete_conf()?;
-            println!("Config created in {}", &config::get_config_path()?);
-            println!("Chech and edit config data_path.");
+            println!(
+                "Config created in {}",
+                &config::get_config_path()?.to_str().unwrap()
+            );
+            println!("Check and edit config data_path.");
             config::get_config()?
         }
     };
@@ -33,12 +41,17 @@ fn execute_args(args: Vec<String>, server_ip: String) -> Result<(), Box<dyn Erro
     match option {
         "--help" | "-h" => help_info(),
         "--download" | "-d" => {
-            let param = get_param(&args);
-            download_file(param?, server_ip)?;
+            let file_name = get_param(&args, 3, false)?;
+            let path_to = get_param(&args, 4, true)?;
+            let path = PathBuf::new().join(path_to).join(file_name);
+            download_file(path.to_str().unwrap(), server_ip)?;
         }
         "--upload" | "-u" => {
-            let param = get_param(&args);
-            upload_file(param?, server_ip)?;
+            let file_name = get_param(&args, 3, false)?;
+            let path_from = get_param(&args, 4, true)?;
+            let path = PathBuf::new().join(path_from).join(file_name);
+
+            upload_file(path.to_str().unwrap(), server_ip)?;
         }
         "--file-list" | "-fl" => {
             get_file_list(server_ip)?;
@@ -51,10 +64,14 @@ fn execute_args(args: Vec<String>, server_ip: String) -> Result<(), Box<dyn Erro
 
 // Get patams from args if it needed
 // And catching any errors
-fn get_param(args: &Vec<String>) -> Result<&str, Box<dyn Error>> {
-    if args.len() > 2 {
-        Ok(&args[2])
+fn get_param(args: &Vec<String>, param_num: usize, optional: bool) -> Result<&str, Box<dyn Error>> {
+    if args.len() > param_num - 1 {
+        Ok(&args[param_num - 1])
     } else {
+        if optional {
+            return Ok("");
+        }
+
         return Err(Box::new(io::Error::new(
             io::ErrorKind::InvalidInput,
             "You need to input param!",
@@ -63,17 +80,30 @@ fn get_param(args: &Vec<String>) -> Result<&str, Box<dyn Error>> {
 }
 
 // Connecting to server and call get_request
-fn download_file(file_name: &str, server_ip: String) -> Result<(), Box<dyn Error>> {
+fn download_file(file_path: &str, server_ip: String) -> Result<(), Box<dyn Error>> {
+    let absolute_path = resolve_path(file_path)?;
+
     let mut stream = tcp_processor::connect_to_server(server_ip)?;
-    tcp_processor::get_request(&mut stream, file_name)?;
+
+    let file_name = absolute_path.file_name().unwrap().to_str().unwrap();
+    let file_data = tcp_processor::get_request(&mut stream, &file_name)?;
+    let mut file = fs::create_file(&absolute_path)?;
+    file.write_all(&file_data)?;
+    println!("File downloaded!");
     Ok(())
 }
 
 // Connecting to server and call send_request
-fn upload_file(file_name: &str, server_ip: String) -> Result<(), Box<dyn Error>> {
-    fs::is_file_exist(tcp_processor::FILE_DIR, file_name)?;
+fn upload_file(file_path: &str, server_ip: String) -> Result<(), Box<dyn Error>> {
+    let absolute_path = resolve_path(file_path)?;
+    fs::is_file_exist(&absolute_path)?;
+
+    let file_name = absolute_path.file_name().unwrap().to_str().unwrap();
     let mut stream = tcp_processor::connect_to_server(server_ip)?;
-    tcp_processor::send_request(&mut stream, file_name)?;
+    let mut buf: Vec<u8> = vec![];
+    let mut file = fs::load_file(&absolute_path)?;
+    file.read_to_end(&mut buf)?;
+    tcp_processor::send_request(&mut stream, &file_name, buf)?;
     Ok(())
 }
 
@@ -86,11 +116,28 @@ fn get_file_list(server_ip: String) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// Converts input_path to to path_buf
+// and if it isnt absolute, make it is
+fn resolve_path(input_path: &str) -> Result<PathBuf, Box<dyn Error>> {
+    if input_path == "" {
+        return Ok(env::current_dir()?);
+    }
+
+    let path = Path::new(input_path);
+
+    if path.is_absolute() {
+        Ok(path.to_path_buf())
+    } else {
+        let current_dir = env::current_dir()?;
+        Ok(current_dir.join(path).to_path_buf())
+    }
+}
+
 // Info with shows when programm
 // Opened with --help or -h
 fn help_info() {
     println!(
-        "nimbus <option> <param>\n<options>:\n --help | -h to show this.\n --download | -d to download file from server.\n --upload | -u to upload file on server."
+        "nimbus <option> <param>\n<options>:\n --help | -h to show this.\n --download | -d to download file from server.\n --upload | -u to upload file on server.\n --file-list | -fl tp get file list on server."
     )
 }
 
