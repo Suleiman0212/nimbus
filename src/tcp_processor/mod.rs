@@ -1,7 +1,7 @@
 use core::f32;
 use std::{
     error::Error,
-    io::{self, Read, Write},
+    io::{self},
     net::{SocketAddr, TcpStream},
 };
 
@@ -107,8 +107,6 @@ pub fn send_request(
 
     rw::wait_ok(stream, Title::SendRequest)?;
 
-    // TODO: Move file read functionality to main.rs
-
     let file_data = Content::Binary(file_data);
 
     let file_message: Message = Message::new(
@@ -121,7 +119,6 @@ pub fn send_request(
     send_message(stream, file_message)?;
 
     wait_ok(stream, Title::SendRequest)?;
-    println!("File uploaded!");
 
     Ok(())
 }
@@ -148,6 +145,21 @@ pub fn file_list_get_request(stream: &mut TcpStream) -> Result<String, Box<dyn E
         };
 
     Ok(String::from_utf8_lossy(&response).to_string())
+}
+
+pub fn remove_request(stream: &mut TcpStream, file_name: &str) -> Result<(), Box<dyn Error>> {
+    let name_content = Content::Text(file_name.to_string());
+    let message: Message = Message::new(
+        Title::RemoveRequest,
+        SubTitile::Ok,
+        ContentType::FileName,
+        vec![name_content],
+    );
+
+    rw::send_message(stream, message)?;
+
+    rw::wait_ok(stream, Title::RemoveRequest)?;
+    Ok(())
 }
 
 // Unboxing message like a gift

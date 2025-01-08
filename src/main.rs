@@ -1,10 +1,10 @@
 use config::Config;
-use fs;
+use fs::{self};
 use std::{
     env,
     error::Error,
     io::{self, Read, Write},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 mod config;
@@ -44,17 +44,24 @@ fn execute_args(args: Vec<String>, server_ip: String) -> Result<(), Box<dyn Erro
             let file_name = get_param(&args, 3, false)?;
             let path_to = get_param(&args, 4, true)?;
             let path = PathBuf::new().join(path_to).join(file_name);
-            download_file(path.to_str().unwrap(), server_ip)?;
+            download_file(path, server_ip)?;
         }
         "--upload" | "-u" => {
             let file_name = get_param(&args, 3, false)?;
             let path_from = get_param(&args, 4, true)?;
             let path = PathBuf::new().join(path_from).join(file_name);
 
-            upload_file(path.to_str().unwrap(), server_ip)?;
+            upload_file(path, server_ip)?;
         }
         "--file-list" | "-fl" => {
             get_file_list(server_ip)?;
+        }
+        "--remove" | "-rm" => {
+            let file_name = get_param(&args, 3, false)?;
+            let path_to = get_param(&args, 4, true)?;
+            let path = PathBuf::new().join(path_to).join(file_name);
+
+            remove_file(path, server_ip)?;
         }
         _ => exit_with("Unknown option."),
     }
@@ -80,7 +87,7 @@ fn get_param(args: &Vec<String>, param_num: usize, optional: bool) -> Result<&st
 }
 
 // Connecting to server and call get_request
-fn download_file(file_path: &str, server_ip: String) -> Result<(), Box<dyn Error>> {
+fn download_file(file_path: PathBuf, server_ip: String) -> Result<(), Box<dyn Error>> {
     let absolute_path = resolve_path(file_path)?;
 
     let mut stream = tcp_processor::connect_to_server(server_ip)?;
@@ -89,12 +96,14 @@ fn download_file(file_path: &str, server_ip: String) -> Result<(), Box<dyn Error
     let file_data = tcp_processor::get_request(&mut stream, &file_name)?;
     let mut file = fs::create_file(&absolute_path)?;
     file.write_all(&file_data)?;
+
     println!("File downloaded!");
+
     Ok(())
 }
 
 // Connecting to server and call send_request
-fn upload_file(file_path: &str, server_ip: String) -> Result<(), Box<dyn Error>> {
+fn upload_file(file_path: PathBuf, server_ip: String) -> Result<(), Box<dyn Error>> {
     let absolute_path = resolve_path(file_path)?;
     fs::is_file_exist(&absolute_path)?;
 
@@ -104,6 +113,9 @@ fn upload_file(file_path: &str, server_ip: String) -> Result<(), Box<dyn Error>>
     let mut file = fs::load_file(&absolute_path)?;
     file.read_to_end(&mut buf)?;
     tcp_processor::send_request(&mut stream, &file_name, buf)?;
+
+    println!("File uploaded!");
+
     Ok(())
 }
 
@@ -116,20 +128,29 @@ fn get_file_list(server_ip: String) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn remove_file(file_path: PathBuf, server_ip: String) -> Result<(), Box<dyn Error>> {
+    let absolute_path = resolve_path(file_path)?;
+
+    let file_name = absolute_path.file_name().unwrap().to_str().unwrap();
+    let mut stream = tcp_processor::connect_to_server(server_ip)?;
+    tcp_processor::remove_request(&mut stream, file_name)?;
+    println!("Path {}", absolute_path.to_str().unwrap());
+    println!("Removed!");
+    Ok(())
+}
+
 // Converts input_path to to path_buf
 // and if it isnt absolute, make it is
-fn resolve_path(input_path: &str) -> Result<PathBuf, Box<dyn Error>> {
-    if input_path == "" {
+fn resolve_path(input_path: PathBuf) -> Result<PathBuf, Box<dyn Error>> {
+    if input_path == PathBuf::from("") {
         return Ok(env::current_dir()?);
     }
 
-    let path = Path::new(input_path);
-
-    if path.is_absolute() {
-        Ok(path.to_path_buf())
+    if input_path.is_absolute() {
+        Ok(input_path)
     } else {
         let current_dir = env::current_dir()?;
-        Ok(current_dir.join(path).to_path_buf())
+        Ok(current_dir.join(input_path).to_path_buf())
     }
 }
 
@@ -137,7 +158,15 @@ fn resolve_path(input_path: &str) -> Result<PathBuf, Box<dyn Error>> {
 // Opened with --help or -h
 fn help_info() {
     println!(
-        "nimbus <option> <param>\n<options>:\n --help | -h to show this.\n --download | -d to download file from server.\n --upload | -u to upload file on server.\n --file-list | -fl tp get file list on server."
+        "
+    Example: nimbus <option> <param> <param>
+<options>:
+    --help      |  -h   to show this.
+    --download  |  -d   to download file from server.
+    --upload    |  -u   to upload file on server.
+    --file-list |  -fl  to get file list from server.
+    --remove    |  -rm  to remove file/dir from server.
+        "
     )
 }
 
