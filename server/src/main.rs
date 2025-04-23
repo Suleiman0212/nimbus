@@ -7,6 +7,7 @@ fn main() -> Result<(), ServerError> {
     tracing_subscriber::fmt::init();
 
     let config = Config::get()?;
+    #[allow(unused)]
     let Config {
         bind_addres,
         root_dir,

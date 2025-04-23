@@ -1,2 +1,4 @@
 server/target/
+client/target/
 config/target/
+protocol/target/

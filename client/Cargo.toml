@@ -1,5 +1,5 @@
 [package]
-name = "server"
+name = "client"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,5 +7,3 @@ edition = "2024"
 config = { path = "../config" }
 protocol = { path = "../protocol" }
 thiserror = "2.0.12"
-tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
