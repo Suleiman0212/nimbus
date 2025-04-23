@@ -1,0 +1,11 @@
+Config(
+  bind_addres: "127.0.0.1:9090",
+  root_dir: "/home/zeroone/",
+  auth_required: true,
+  users: [
+    User(
+      login: "root",
+      password: "root",
+    ),
+  ],
+)

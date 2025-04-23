@@ -1,0 +1,7 @@
+Config(
+  server_addres: "127.0.0.1:9090",
+  user: User(
+      login: "root",
+      password: "root",
+  ),
+)
