@@ -14,6 +14,9 @@ pub enum ClientError {
     #[error("User data isn't correct, unsuccessful login")]
     IncorrectUser,
 
+    #[error("Session isn't exists")]
+    UnexistsSession,
+
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }

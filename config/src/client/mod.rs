@@ -12,7 +12,7 @@ pub struct Config {
     pub user: User,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct User {
     pub login: String,
     pub password: String,

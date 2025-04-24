@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 
-use crate::{CONFIG, add_session, error::ServerError, session_exists};
+use crate::{CONFIG, HandleResult, add_session, session_exists};
 use protocol::{message::Message, rw};
 
 pub fn handle_connection(mut stream: TcpStream) -> HandleResult {
@@ -23,8 +23,6 @@ fn handle_message(stream: TcpStream, message: Message) -> HandleResult {
     Ok(())
 }
 
-type HandleResult = Result<(), ServerError>;
-
 fn handle_login_request(mut stream: TcpStream, login: String, password: String) -> HandleResult {
     let login_successfully = CONFIG
         .users
@@ -35,7 +33,7 @@ fn handle_login_request(mut stream: TcpStream, login: String, password: String) 
     rw::send_message(&mut stream, message)?;
     if login_successfully {
         add_session(stream.peer_addr()?);
-        tracing::info!("User {} login successgully", login);
+        tracing::info!("User {} login successfully", login);
     } else {
         tracing::info!("User {} unsuccessful login", login);
     }
