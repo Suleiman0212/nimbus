@@ -11,6 +11,10 @@ pub enum Message {
     LoginAnswer {
         login_successfully: bool,
     },
+    LoginSessionRequest,
+    LoginSessionAnswer {
+        session_exists: bool,
+    },
     FileMetaRequest {
         file_path: String,
     },
