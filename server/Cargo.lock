@@ -75,6 +75,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "filesys"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -222,6 +229,7 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "config",
+ "filesys",
  "once_cell",
  "protocol",
  "thiserror",
