@@ -28,17 +28,23 @@ pub enum Message {
         file_data: Result<Vec<u8>, String>,
     },
     FileUploadRequest {
-        file_size: u64,
+        file_path: String,
+        file_data: Vec<u8>,
     },
-    FileUploadAction {
-        file_path: Result<String, String>,
-        file_data: Option<Vec<u8>>,
+    FileUploadAnswer {
+        uploaded: bool,
     },
     FileDeleteRequest {
         file_path: String,
     },
     FileDeleteAnswer {
-        file_name: Result<String, String>,
+        deleted: Result<bool, String>,
+    },
+    FileListRequest {
+        path: String,
+    },
+    FileListAnswer {
+        files: Vec<String>,
     },
 }
 
