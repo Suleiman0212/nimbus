@@ -14,10 +14,10 @@ pub fn handle_connection(mut stream: TcpStream) -> HandleResult {
     Ok(())
 }
 
-fn handle_message(stream: TcpStream, message: Message) -> HandleResult {
+fn handle_message(mut stream: TcpStream, message: Message) -> HandleResult {
     match message {
         Message::LoginRequest { login, password } => handle_login_request(stream, login, password)?,
-        Message::LoginSessionRequest => handle_login_session_request(stream)?,
+        Message::LoginSessionRequest => handle_login_session_request(&mut stream)?,
         Message::FileMetaRequest { file_path } => handle_file_meta_request(stream, file_path)?,
         Message::FileDownloadRequest { file_path } => {
             handle_file_download_request(stream, file_path)?
@@ -50,17 +50,29 @@ fn handle_login_request(mut stream: TcpStream, login: String, password: String) 
     Ok(())
 }
 
-fn handle_login_session_request(mut stream: TcpStream) -> HandleResult {
+fn handle_login_session_request(stream: &mut TcpStream) -> HandleResult {
     let session_exists = session_exists(stream.peer_addr()?);
     let message = Message::LoginSessionAnswer { session_exists };
-    rw::send_message(&mut stream, message)?;
+    rw::send_message(stream, message)?;
+
+    tracing::info!("LoginSessionRequest handled succefully");
+
     Ok(())
 }
 
 fn handle_file_meta_request(mut stream: TcpStream, file_path: String) -> HandleResult {
     let file_size = Ok(filesys::file::get_file_size(file_path.into())?);
-    let message = Message::FileMetaAnswer { file_size };
+    let message = match session_exists(stream.peer_addr()?) {
+        true => Message::FileMetaAnswer { file_size },
+        false => Message::FileMetaAnswer {
+            file_size: Err("No rules.".into()),
+        },
+    };
+
     rw::send_message(&mut stream, message)?;
+
+    tracing::info!("FileMetaRequest handled succefully");
+
     Ok(())
 }
 

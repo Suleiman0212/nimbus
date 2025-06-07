@@ -8,11 +8,20 @@ pub enum ClientError {
     #[error(transparent)]
     Protocol(#[from] protocol::error::MessageError),
 
+    #[error(transparent)]
+    FileSys(#[from] filesys::error::FsError),
+
+    #[error("Received invalid argemts")]
+    InvalidArguments,
+
     #[error("Received incorrect message")]
     IncorrectMessage,
 
     #[error("User data isn't correct, unsuccessful login")]
     IncorrectUser,
+
+    #[error("Error received: {0}")]
+    ErrReceived(String),
 
     #[error("Session isn't exists")]
     UnexistsSession,

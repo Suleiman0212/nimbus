@@ -48,6 +48,7 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "config",
+ "filesys",
  "once_cell",
  "protocol",
  "thiserror",
@@ -82,6 +83,13 @@ dependencies = [
  "option-ext",
  "redox_users",
  "windows-sys",
+]
+
+[[package]]
+name = "filesys"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
